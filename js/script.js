@@ -1,67 +1,111 @@
-//CartoDB Basemap
-var layer = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
-});
+var basemapUrl = 'http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+  var attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>';
 
-var eastRiver = [40.706913,-73.987513];
+  //initialize map1
+  var map1 = L.map('map1', {
+    scrollWheelZoom: false
+  }).setView( [40.706913,-73.987513], 5);
 
-var myZoom = 5;
-//now the fun stuff:  leaflet!
-var map = L.map('myMap').setView(eastRiver, myZoom);
-map.addLayer(layer)
+  //CartoDB Basemap
+  L.tileLayer(basemapUrl,{
+    attribution: attribution
+  }).addTo(map1);
 
-$.getJSON('data/cities.geojson', function(data) {
-  console.log(data);
-  var lived_style = {
-    radius: 10,
-    fillColor: '#3366ff',
-    color: '#FFF',
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.8
-  };
+  //load external geojson
+  $.getJSON('data/cities.geojson', function(data) {
+    console.log(data);
 
-  var not_lived_style = {
-    radius: 10,
-    fillColor: '#ff3300',
-    color: '#FFF',
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.8
-  };
+    //define two different styles
+    var lived_style = {
+      radius: 10,
+      fillColor: "#3366ff",
+      color: "#FFF",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    };
 
-  var burgerIcon = L.icon({
-    iconUrl: 'img/burger.png',
-    iconSize: [37, 37],
-    iconAnchor: [16, 37]
+    var not_lived_style = {
+      radius: 10,
+      fillColor: "#ff3300",
+      color: "#FFF",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    };
+
+
+
+
+    L.geoJson(data, 
+    {
+      //calling L.geoJson with pointToLayer as an option will automatically add markers to the map from our data
+      pointToLayer: function (feature, latlng) {
+
+          console.log(feature);
+          if(feature.properties.chris_lived_here == "true") {
+            return L.circleMarker(latlng, lived_style);
+       
+          } else {
+            return L.circleMarker(latlng, not_lived_style);
+          }
+      }
+    }
+    ).addTo(map1);
+
+
+
+
+
+
+
   });
+
+  //map2 simply shows a geojson layer with polygons using NYC NTA data
+
+  //initialize map2
+  var map2 = L.map('map2', {
+    scrollWheelZoom: false
+  }).setView( [40.767802,-73.953266], 12);
+  
+  //CartoDB Basemap
+  L.tileLayer(basemapUrl,{
+    attribution: attribution
+  }).addTo(map2);
+
+
+  $.getJSON('data/neighborhoods.geojson', function(nabe_data) {
+    L.geoJson(nabe_data).addTo(map2);
+  })
+
+
+  //map 3 is a rebuild of this leaflet choropleth demo: http://leafletjs.com/examples/choropleth.html
+
+  //initialize map3
+  var map3 = L.map('map3', {
+    scrollWheelZoom: false
+  }).setView( [40.706913,-73.987513], 5);
+
+  //CartoDB Basemap
+  L.tileLayer(basemapUrl,{
+    attribution: attribution
+  }).addTo(map3);
 
   var geojson;
 
-  L.geoJson(data, {
-    pointToLayer: function (feature, latlng) {
-      console.log(feature);
-
-      if(feature.properties.chris_lived_here == "true") {
-        return L.circleMarker(latlng, lived_style);
-      } else {
-        return L.circleMarker(latlng, not_lived_style);
-      }
-    }
-  }
-  ).addTo(map);
-
+  //this function takes a value and returns a color based on which bucket the value falls between
   function getColor(d) {
-    return d > 1000 ? '#800026' :
-           d > 500  ? '#BD0026' :
-           d > 200  ? '#E31A1C' :
-           d > 100  ? '#FC4E2A' :
-           d > 50   ? '#FD8D3C' :
-           d > 20   ? '#FEB24C' :
-           d > 10   ? '#FED976' :
-                      '#FFEDA0';
+      return d > 1000 ? '#0000cc' :
+             d > 500  ? '#BD0026' :
+             d > 200  ? '#E31A1C' :
+             d > 100  ? '#FC4E2A' :
+             d > 50   ? '#FD8D3C' :
+             d > 20   ? '#FEB24C' :
+             d > 10   ? '#FED976' :
+                        '#FFEDA0';
   }
 
+  //this function returns a style object, but dynamically sets fillColor based on the data
   function style(feature) {
     return {
         fillColor: getColor(feature.properties.density),
@@ -73,6 +117,7 @@ $.getJSON('data/cities.geojson', function(data) {
     };
   }
 
+  //this function is set to run when a user mouses over any polygon
   function mouseoverFunction(e) {
     var layer = e.target;
 
@@ -87,27 +132,78 @@ $.getJSON('data/cities.geojson', function(data) {
         layer.bringToFront();
     }
 
+    //update the text in the infowindow with whatever was in the data
     console.log(layer.feature.properties.name);
     $('#infoWindow').text(layer.feature.properties.name);
 
   }
 
+  //this runs on mouseout
   function resetHighlight(e) {
     geojson.resetStyle(e.target);
   }
 
+  //this is executed once for each feature in the data, and adds listeners
   function onEachFeature(feature, layer) {
     layer.on({
         mouseover: mouseoverFunction,
-        mouseout: resetHighlight,
+        mouseout: resetHighlight
         //click: zoomToFeature
     });
   }
 
-  $.getJSON('data/states.geojson', function(states_data) {
-    geojson = L.geoJson(states_data, {
+
+  //all of the helper functions are defined and ready to go, so let's get some data and render it!
+
+  //be sure to specify style and onEachFeature options when calling L.geoJson().
+  $.getJSON('data/states.geojson', function(state_data) {
+    geojson = L.geoJson(state_data,{
       style: style,
       onEachFeature: onEachFeature
-    }).addTo(map);
+    }).addTo(map3);
   });
-});
+
+  //initialize map4
+  var map4 = L.map('map4', {
+    scrollWheelZoom: false
+  }).setView( [40.706913,-73.987513], 5);
+
+  //CartoDB Basemap
+  L.tileLayer(basemapUrl,{
+    attribution: attribution
+  }).addTo(map4);
+
+  //load external geojson
+  $.getJSON('data/cities.geojson', function(data) {
+    console.log(data);
+
+    var burgerIcon = L.icon({
+      iconUrl: 'img/burger.png',
+      iconSize:     [37, 37], // size of the icon
+      iconAnchor:   [16, 37] // point of the icon which will correspond to marker's location
+    });
+    var lawnMowerIcon = L.icon({
+      iconUrl: 'img/lawnmower.png',
+      iconSize:     [37, 37], // size of the icon
+      iconAnchor:   [16, 37] // point of the icon which will correspond to marker's location
+    });
+
+    L.geoJson(data, 
+    {
+      //calling L.geoJson with pointToLayer as an option will automatically add markers to the map from our data
+      pointToLayer: function (feature, latlng) {
+
+          console.log(feature);
+
+          if(feature.properties.chris_lived_here == "true") {
+            return L.marker(latlng, {icon: burgerIcon})
+              .bindPopup('Chris has lived in ' + feature.properties.City_Name);
+          } else {
+            return L.marker(latlng, {icon: lawnMowerIcon})
+            .bindPopup('Chris has not lived in ' + feature.properties.City_Name);;
+          }
+      }
+    }
+    ).addTo(map4);
+
+  });

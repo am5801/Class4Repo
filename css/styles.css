@@ -1,17 +1,21 @@
 body, html {
   font-family: sans-serif;
 }
-#myMap {
+
+.map {
   width: 100%;
   height: 500px;
   background-color: gray;
 }
+
 #infoWindow {
-	position: fixed;
-	top: 0;
-	right: 0;
-	background: #FFFFFF;
-	padding: 15px;
-	border-radius: 10px;
-	font: 20px;
+  background: #FFFFFF;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 30px;
+  position: relative;
+  top: -78px;
+  width: auto;
+  display: inline;
+  margin-left: 20px;
 }
